@@ -2,8 +2,11 @@ import { Request, Response } from "express";
 import { BusinessesService } from "../services/businessesService";
 import { Business } from "../interface/businesse.interface";
 import { validationResult } from "express-validator";
+import { generateBusinessScenarios } from "../services/geminiService";
+import { ScenarioService } from "../services/scenarioService";
 
 const business_Service = new BusinessesService();
+const scenarioService = new ScenarioService();
 
 export class BusinessesController {
     public getBussinesses = async (req: Request, res: Response): Promise<any> => {
@@ -46,10 +49,25 @@ export class BusinessesController {
                 });
                 
             }
+
+            let aiScenarios = [];
+            try {
+                aiScenarios = await generateBusinessScenarios(
+                    newBusiness.business_type || 'general',
+                    newBusiness.enterprise_name || 'Business'
+                );
+                
+                await scenarioService.createBulkScenarios(newBusiness.id!, aiScenarios);
+            } catch (aiError) {
+                console.error('AI scenario generation failed:', aiError);
+            }
+
             return res.status(201).json({ 
                 success: true, 
                 message: 'Business created successfully', 
-                data: newBusiness });
+                data: newBusiness,
+                ai_scenarios_generated: aiScenarios.length
+            });
         } catch (error) {
             return res.status(500).json({ success: false, error: 'Failed to create business' });
         }

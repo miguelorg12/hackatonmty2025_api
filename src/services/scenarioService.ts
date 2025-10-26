@@ -32,4 +32,25 @@ export class ScenarioService {
         const result = await db.query("UPDATE scenarios SET is_active = false, updated_at = NOW() WHERE id = $1 RETURNING *", [id]);
         return result.rows[0];
     }
+
+    public async createBulkScenarios(businessId: number, scenarios: any[]): Promise<Scenario[]> {
+        const createdScenarios: Scenario[] = [];
+        
+        for (const scenario of scenarios) {
+            const result = await db.query(
+                `INSERT INTO scenarios (business_id, name, income_multiplier, expense_multiplier, payment_delay_days, created_at, is_active) 
+                 VALUES ($1, $2, $3, $4, $5, NOW(), true) RETURNING *`,
+                [
+                    businessId,
+                    scenario.name,
+                    scenario.income_multiplier || 1.0,
+                    scenario.expense_multiplier || 1.0,
+                    scenario.payment_delay_days || 0
+                ]
+            );
+            createdScenarios.push(result.rows[0]);
+        }
+        
+        return createdScenarios;
+    }
 }
