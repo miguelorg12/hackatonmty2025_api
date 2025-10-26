@@ -2,7 +2,6 @@ import bcrypt from 'bcryptjs';
 import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import pool from '../config/database';
 import { User, Login, Register }  from '../interface/user.interface';
-import { query } from 'express-validator';
 
 interface LoginResponse {
     user: Omit<User, 'password'>;
@@ -12,7 +11,7 @@ interface LoginResponse {
 
 export class AuthService {
     private static readonly JWT_SECRET: Secret = process.env.JWT_SECRET || "your-secret-key"
-    private static readonly JWT_EXPIRES_IN = process.env.JWT_EXPIRES || "24h"
+    private static readonly JWT_EXPIRES_IN = "24h" // Valor fijo para garantizar consistencia
     private static readonly SALT_ROUNDS = 12
 
     public static async register(userData : Register) : Promise<User> {
@@ -82,16 +81,15 @@ export class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
-            username: user.username,
-            iat: Math.floor(Date.now() / 1000)
+            username: user.username
         };
 
         try {
-            const options: SignOptions = {
-                expiresIn: parseInt(this.JWT_EXPIRES_IN) || '24h'
-            };
-            return jwt.sign(payload, this.JWT_SECRET, options);
+            return jwt.sign(payload, this.JWT_SECRET, {
+                expiresIn: "24h" // Valor literal permitido por jwt.sign
+            });
         } catch (error) {
+            console.error('Token generation error:', error);
             throw new Error('Error generating authentication token');
         }
     }
@@ -99,12 +97,22 @@ export class AuthService {
     public static verifyToken(token: string): any {
         try {
             const decoded = jwt.verify(token, this.JWT_SECRET);
-            return decoded;
+            
+            // Verificar que el token decodificado tenga la estructura esperada
+            if (typeof decoded === 'object' && decoded !== null && 
+                'sub' in decoded && 'email' in decoded && 'username' in decoded) {
+                return decoded;
+            }
+            
+            throw new Error('Invalid token structure');
         } catch (error) {
             if (error instanceof jwt.TokenExpiredError) {
-                throw new Error('Token expirado');
+                throw new Error('Token has expired');
             }
-            throw new Error('Token inválido');
+            if (error instanceof jwt.JsonWebTokenError) {
+                throw new Error('Invalid token');
+            }
+            throw error;
         }
     }
 }
