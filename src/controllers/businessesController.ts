@@ -5,7 +5,7 @@ import { validationResult } from "express-validator";
 
 const business_Service = new BusinessesService();
 
-export class BusinessesControler {
+export class BusinessesController {
     public getBussinesses = async (req: Request, res: Response): Promise<any> => {
         try {
             const businesses: Business[] = await business_Service.getAllBusinesses();

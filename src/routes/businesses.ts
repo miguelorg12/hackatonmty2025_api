@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { BusinessesControler } from "../controllers/businessesController";
+import { BusinessesController } from "../controllers/businessesController";
 import { BussinesValidator } from "../validators/businessValidator";
 
 const businessesRouter = Router();
-const bussines = new BusinessesControler();
+const bussines = new BusinessesController();
 
 businessesRouter.get("/", bussines.getBussinesses);
 businessesRouter.get("/user/:id", bussines.getBusinessByUser);
