@@ -1,5 +1,5 @@
 import db from "../config/database";
-import { Category } from "../interface/category";
+import { Category } from "../interface/category.interface";
 
 export class CategoryService {
     async getCategory(id: number): Promise<Category> {

@@ -4,6 +4,7 @@ import businessesRouter from "./businesses";
 import authRouter from "./auth";
 import scenarioRouter from "./scenario";
 import categoryRouter from "./category";
+import transactionRouter from "./transaction";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use("/auth", authRouter);
 router.use("/gemini", geminiRoutes);
 router.use("/businesses", businessesRouter);
 router.use("/scenario", scenarioRouter);
+router.use("/transaction", transactionRouter);
 router.use("/categories", categoryRouter);
 
 export default router;

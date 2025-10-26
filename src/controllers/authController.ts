@@ -83,4 +83,39 @@ export class AuthController {
             });
         }
     }
+
+    public updateUser = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                res.status(422).json({
+                    success: false,
+                    errors: errors.array()
+                });
+                return;
+            }
+
+            const userId = parseInt(req.params.id);
+            const updateData = req.body;
+
+            const updatedUser = await AuthService.updateUser(userId, updateData);
+
+            res.status(200).json({
+                success: true,
+                message: 'User updated successfully',
+                data: {
+                    id: updatedUser.id,
+                    email: updatedUser.email,
+                    username: updatedUser.username
+                }
+            });
+        } catch (error) {
+            console.error('Update error:', error);
+            res.status(500).json({
+                success: false,
+                message: error instanceof Error ? error.message : 'Error updating user'
+            });
+        }
+    }
+    
 }

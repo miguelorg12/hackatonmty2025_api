@@ -29,4 +29,19 @@ export class AuthValidator {
                 .notEmpty().withMessage('Password is required')
         ]
     }
+
+    static updateUser() {
+        return [
+            body('email')
+                .optional().isEmail().normalizeEmail(),
+            body('username')
+                .optional().isLength({ min: 3, max : 50 }).trim().escape(),
+            body('password')
+                    .optional().isLength({ min: 8 })
+                    .matches(/[0-9]/).withMessage('Password must contain at least a number.')
+                    .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter.')
+                    .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+                    .matches(/[\W_]/).withMessage('Password must contain at least one special character.')
+        ]
+    }
 }

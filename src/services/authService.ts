@@ -14,6 +14,73 @@ export class AuthService {
     private static readonly JWT_EXPIRES_IN = "24h" // Valor fijo para garantizar consistencia
     private static readonly SALT_ROUNDS = 12
 
+    public static async updateUser(id: number, data: Partial<User>): Promise<User> {
+        try {
+            // Verificar si el usuario existe y está activo
+            const existingUser = await pool.query(
+                'SELECT * FROM users WHERE id = $1 AND is_active = true',
+                [id]
+            );
+
+            if (existingUser.rows.length === 0) {
+                throw new Error('User not found or inactive');
+            }
+
+            // Si se actualiza el email, verificar que no exista
+            if (data.email && data.email !== existingUser.rows[0].email) {
+                const emailExists = await this.findUserByEmail(data.email);
+                if (emailExists) {
+                    throw new Error('Email already in use');
+                }
+            }
+
+            const updateFields = [];
+            const values = [];
+            let paramCount = 1;
+
+            if (data.email !== undefined) {
+                updateFields.push(`email = $${paramCount}`);
+                values.push(data.email);
+                paramCount++;
+            }
+
+            if (data.username !== undefined) {
+                updateFields.push(`username = $${paramCount}`);
+                values.push(data.username);
+                paramCount++;
+            }
+
+            if (data.password) {
+                const hashedPassword = await bcrypt.hash(data.password, this.SALT_ROUNDS);
+                updateFields.push(`password = $${paramCount}`);
+                values.push(hashedPassword);
+                paramCount++;
+            }
+
+            // Siempre actualizamos updated_at
+            updateFields.push('updated_at = CURRENT_TIMESTAMP');
+
+            // Agregamos el ID al final del array de valores
+            values.push(id);
+
+            const query = `
+                UPDATE users 
+                SET ${updateFields.join(', ')}
+                WHERE id = $${paramCount} AND is_active = true
+                RETURNING id, email, username, created_at, updated_at
+            `;
+
+            const result = await pool.query(query, values);
+
+            return result.rows[0];
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new Error(error.message);
+            }
+            throw new Error('Error updating user');
+        }
+    }
+
     public static async register(userData : Register) : Promise<User> {
         const existingUser = await this.findUserByEmail(userData.email);
             if (existingUser) {
@@ -85,9 +152,10 @@ export class AuthService {
         };
 
         try {
-            return jwt.sign(payload, this.JWT_SECRET, {
-                expiresIn: "24h" // Valor literal permitido por jwt.sign
-            });
+            const options: SignOptions = {
+                expiresIn: this.JWT_EXPIRES_IN // Usar directamente el valor de JWT_EXPIRES_IN
+            };
+            return jwt.sign(payload, this.JWT_SECRET, options);
         } catch (error) {
             console.error('Token generation error:', error);
             throw new Error('Error generating authentication token');
@@ -115,4 +183,6 @@ export class AuthService {
             throw error;
         }
     }
+
+    
 }
